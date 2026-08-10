@@ -1,1 +1,32 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>UAE Tax Agent Exam - Dr. Mousa Basyouni</title><style>html,body,#exam{width:100%;height:100%;margin:0;border:0;overflow:hidden}#status{position:fixed;bottom:10px;right:10px;background:#fff;padding:6px 10px;border-radius:8px;font:12px Arial;box-shadow:0 2px 8px #0002;display:none}</style></head><body><iframe id="exam" src="index.html"></iframe><div id="status"></div><iframe name="resultReceiver" style="display:none"></iframe><form id="resultForm" method="POST" target="resultReceiver" style="display:none"><input type="hidden" name="payload" id="payload"></form><script>const ENDPOINT='https://script.google.com/macros/s/AKfycbx5HJIZJOTLI6Qh6eSZzkPoKt_8OgSXqGlSOcntEHYxttoEtFXFLThqBo8cp8drZB2MoQ/exec';const frame=document.getElementById('exam');frame.onload=()=>{const w=frame.contentWindow;if(!w||typeof w.submitExam!=='function')return;const original=w.submitExam;w.submitExam=function(auto){const before=w.localStorage.getItem('tax_exam_result');original(auto);setTimeout(()=>{const after=w.localStorage.getItem('tax_exam_result');const finished=!w.document.getElementById('resultScreen').classList.contains('hidden');if(!finished||!after||after===before)return;try{const data=JSON.parse(after);document.getElementById('payload').value=JSON.stringify(data);const f=document.getElementById('resultForm');f.action=ENDPOINT;f.submit();const s=document.getElementById('status');s.textContent='Result submitted';s.style.display='block';setTimeout(()=>s.style.display='none',3000)}catch(e){}},150)}};</script></body></html>
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UAE Tax Agent Exam - Dr. Mousa Basyouni</title>
+<style>
+html,body{width:100%;height:100%;margin:0;font-family:Arial;background:#f4f7fb}
+#exam{width:100%;height:100%;margin:0;border:0;display:none}
+#gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px}
+#card{background:#fff;max-width:600px;padding:30px;border-radius:18px;box-shadow:0 12px 40px #0001;text-align:center}
+#error{color:#b42318}
+#status{position:fixed;bottom:10px;right:10px;background:#fff;padding:8px 12px;border-radius:8px;font:12px Arial;box-shadow:0 2px 8px #0002;display:none}
+</style>
+</head>
+<body>
+<div id="gate"><div id="card"><h2>UAE Tax Agent – Final Certification Exam</h2><p><b>Prepared & Supervised by Dr. Mousa Basyouni</b></p><p id="gateMsg">Checking your exam link...</p></div></div>
+<iframe id="exam" src="index.html"></iframe>
+<div id="status"></div>
+<iframe name="resultReceiver" style="display:none"></iframe>
+<form id="resultForm" method="POST" target="resultReceiver" style="display:none"><input type="hidden" name="payload" id="payload"></form>
+<script>
+const ENDPOINT='https://script.google.com/macros/s/AKfycbx5HJIZJOTLI6Qh6eSZzkPoKt_8OgSXqGlSOcntEHYxttoEtFXFLThqBo8cp8drZB2MoQ/exec';
+const TOKEN=new URLSearchParams(location.search).get('token')||'';
+const frame=document.getElementById('exam');
+let authorized=false;
+function jsonp(action,extra={}){return new Promise((resolve,reject)=>{const cb='cb_'+Date.now()+'_'+Math.random().toString(36).slice(2);const s=document.createElement('script');const params=new URLSearchParams({action,token:TOKEN,callback:cb,...extra});window[cb]=(data)=>{delete window[cb];s.remove();resolve(data)};s.onerror=()=>{delete window[cb];s.remove();reject(new Error('connection'))};s.src=ENDPOINT+'?'+params.toString();document.head.appendChild(s);});}
+async function checkAccess(){const msg=document.getElementById('gateMsg');if(!TOKEN){msg.id='error';msg.textContent='Invalid or missing exam link. Please request your personal exam link from Dr. Mousa Basyouni.';return;}try{const r=await jsonp('check');if(!r.allowed){msg.id='error';msg.textContent=r.message||'This exam link is no longer available.';return;}authorized=true;document.getElementById('gate').style.display='none';frame.style.display='block';installHooks();}catch(e){msg.id='error';msg.textContent='Unable to verify this link. Please try again.';}}
+function installHooks(){const w=frame.contentWindow;if(!w||!w.document||typeof w.startExam!=='function'){setTimeout(installHooks,150);return;}if(w.__secureHooksInstalled)return;w.__secureHooksInstalled=true;const originalStart=w.startExam;w.startExam=async function(){if(!authorized)return;const name=w.document.getElementById('studentName').value.trim();const email=w.document.getElementById('studentEmail').value.trim().toLowerCase();if(!name){w.alert('Please enter student name');return;}if(!email||!email.includes('@')){w.alert('Please enter a valid email address');return;}try{const r=await jsonp('consume',{email,name});if(!r.allowed){frame.style.display='none';document.getElementById('gate').style.display='flex';const m=document.getElementById('gateMsg');m.id='error';m.textContent=r.message||'No attempts remaining. Please request a new link.';return;}originalStart();}catch(e){w.alert('Unable to verify access. Please try again.');}};const originalSubmit=w.submitExam;w.submitExam=function(auto){const before=w.localStorage.getItem('tax_exam_result');originalSubmit(auto);setTimeout(()=>{const after=w.localStorage.getItem('tax_exam_result');const resultScreen=w.document.getElementById('resultScreen');const finished=resultScreen&&!resultScreen.classList.contains('hidden');if(!finished||!after||after===before)return;try{const data=JSON.parse(after);data.token=TOKEN;data.answers=(w.answers||[]).map((a,i)=>({question:i+1,selected:a===null?null:String.fromCharCode(65+a),correct:String.fromCharCode(65+w.questions[i].answer),isCorrect:a===w.questions[i].answer}));document.getElementById('payload').value=JSON.stringify(data);const f=document.getElementById('resultForm');f.action=ENDPOINT;f.submit();const s=document.getElementById('status');s.textContent='Result submitted';s.style.display='block';setTimeout(()=>s.style.display='none',3000);}catch(e){}},200);};}
+frame.onload=()=>{if(authorized)installHooks();};checkAccess();
+</script>
+</body></html>
